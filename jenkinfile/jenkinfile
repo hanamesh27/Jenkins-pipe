@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+    environment {
+        ACR_NAME = 'acr1410'
+        ACR_LOGIN_SERVER = 'acr1410.azurecr.io'
+        IMAGE_NAME = 'yourapp'
+        TAG = 'latest'
+        AKS_RESOURCE_GROUP = 'aks'
+        AKS_CLUSTER_NAME = 'aks-pipe'
+        NAMESPACE = 'default'
+    }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/Lucifer1493/Jenkins-pipe.git'  // Change to your repo
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                sh 'mvn clean package'  // Modify as per your project
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:$TAG .'
+            }
+        }
+
+        stage('Login to ACR') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
+                    sh 'echo $ACR_PASS | docker login $ACR_LOGIN_SERVER -u $ACR_USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image to ACR') {
+            steps {
+                sh 'docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$TAG'
+            }
+        }
+
+        stage('Deploy to AKS') {
+            steps {
+                withCredentials([file(credentialsId: 'aks-kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl set image deployment/$IMAGE_NAME $IMAGE_NAME=$ACR_LOGIN_SERVER/$IMAGE_NAME:$TAG -n $NAMESPACE'
+                }
+            }
+        }
+    }
+}
