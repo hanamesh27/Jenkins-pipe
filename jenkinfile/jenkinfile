@@ -1,8 +1,8 @@
 pipeline {
     agent any
     environment {
-        ACR_NAME = 'acr1410'
-        ACR_LOGIN_SERVER = 'acr1410.azurecr.io'
+        ACR_NAME = 'myregistryjenkin'
+        ACR_LOGIN_SERVER = 'myregistryjenkin.azurecr.io'
         IMAGE_NAME = 'yourapp'
         TAG = 'latest'
         AKS_RESOURCE_GROUP = 'aks'
